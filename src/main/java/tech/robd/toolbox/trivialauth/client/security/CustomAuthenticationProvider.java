@@ -1,14 +1,17 @@
 package tech.robd.toolbox.trivialauth.client.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -21,7 +24,6 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
    private final RestTemplate restTemplate = new RestTemplate();
    private final String authServiceUrl = "http://localhost:8081/authenticate";
-
 
    @Override
    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -42,34 +44,55 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
          // Make the POST call to the authentication service
          ResponseEntity<Map> response = restTemplate.postForEntity(authServiceUrl, request, Map.class);
          if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            // Assume the JWT token is returned under the key "token"
+            // Get the JWT token
             String jwtToken = (String) response.getBody().get("token");
             if (jwtToken != null && !jwtToken.isEmpty()) {
-               // Authentication is successful; the token can be used as credentials or stored as needed.
-               return new UsernamePasswordAuthenticationToken(username, jwtToken, Collections.emptyList());
+               // Extract user roles from token
+               List<GrantedAuthority> authorities = extractAuthoritiesFromToken(jwtToken);
+
+               // Create authenticated token with authorities
+               return new UsernamePasswordAuthenticationToken(
+                       username,
+                       jwtToken,
+                       authorities
+               );
             }
          }
       } catch (Exception ex) {
-         // Optionally log the exception
-         ex.printStackTrace();
+         throw new AuthenticationServiceException("Authentication service error", ex);
       }
 
-      // Return null if authentication failed
-      return null;
+      throw new BadCredentialsException("Authentication failed");
    }
 
+   private List<GrantedAuthority> extractAuthoritiesFromToken(String jwtToken) {
+      try {
+         // Decode token parts (simple parsing for demo purposes)
+         String[] chunks = jwtToken.split("\\.");
+         if (chunks.length < 2) {
+            return Collections.emptyList();
+         }
 
-   // TODO If you wanted you could replace the authentication method with method below, to do quick and dirty local auth
-   public Authentication authenticateLocally(Authentication authentication) throws AuthenticationException {
-      String username = authentication.getName();
-      String password = authentication.getCredentials().toString();
-      
-      // TODO Simulated authentication logic.
-      if (password.equals(username + "-pass")) {
-         return new UsernamePasswordAuthenticationToken(username, password, Collections.emptyList());
+         // Decode the payload
+         Base64.Decoder decoder = Base64.getUrlDecoder();
+         String payload = new String(decoder.decode(chunks[1]));
+
+         // Parse JSON
+         ObjectMapper mapper = new ObjectMapper();
+         Map<String, Object> claims = mapper.readValue(payload, Map.class);
+
+          // Extract role
+         String role = (String) claims.get("role");
+         if (role != null && !role.isEmpty()) {
+            // Prefix with ROLE_ as Spring Security convention
+            return List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+         }
+
+         return Collections.emptyList();
+      } catch (Exception e) {
+         // If token parsing fails, return empty authorities
+         return Collections.emptyList();
       }
-
-      return null; // authentication failed
    }
 
    @Override
