@@ -1,5 +1,7 @@
 package tech.robd.toolbox.trivialauth.client.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -20,14 +22,18 @@ import tech.robd.toolbox.trivialauth.client.security.CustomAuthenticationProvide
 @EnableWebSecurity
 public class WebSecurityConfig {
 
+    private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
+
     private final JwtDecoder jwtDecoder;
 
     public WebSecurityConfig(JwtDecoder jwtDecoder) {
         this.jwtDecoder = jwtDecoder;
+        logger.info("WebSecurityConfig initialized with JwtDecoder: {}", jwtDecoder);
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        logger.info("Configuring security filter chain");
         http
                 // Disable CSRF for simplicity (consider enabling for production with proper configuration)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -59,17 +65,22 @@ public class WebSecurityConfig {
                         .jwt(jwt -> jwt.decoder(jwtDecoder))
                 );
 
-        return http.build();
+        SecurityFilterChain filterChain = http.build();
+        logger.debug("Security filter chain configured successfully");
+        return filterChain;
     }
 
     @Bean
     public AuthenticationManager authenticationManager() {
-        return new ProviderManager(customAuthenticationProvider());
+        logger.info("Creating AuthenticationManager bean");
+        AuthenticationManager authManager = new ProviderManager(customAuthenticationProvider());
+        logger.debug("AuthenticationManager created successfully");
+        return authManager;
     }
 
     @Bean
     public AuthenticationProvider customAuthenticationProvider() {
-        // Your existing custom provider that calls your auth server
+        logger.info("Creating customAuthenticationProvider bean");
         return new CustomAuthenticationProvider();
     }
 }
