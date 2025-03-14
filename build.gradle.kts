@@ -25,10 +25,21 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
-
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.test {
+    doFirst {
+        val byteBuddyAgentJar = configurations.testRuntimeClasspath.get().files
+            .find { it.name.contains("byte-buddy-agent") }
+        if (byteBuddyAgentJar != null) {
+            jvmArgs("-javaagent:${byteBuddyAgentJar.absolutePath}")
+        }
+    }
+}
+

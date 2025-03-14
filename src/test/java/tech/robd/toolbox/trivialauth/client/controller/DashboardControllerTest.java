@@ -28,14 +28,26 @@
  */
 package tech.robd.toolbox.trivialauth.client.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@RestController
-public class ApiController {
+@WebMvcTest(DashboardController.class)
+public class DashboardControllerTest {
 
-   @GetMapping("/api/greeting")
-   public String getGreeting() {
-      return "Hello from our secured REST endpoint!";
-   }
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    @WithMockUser  // Simulate an authenticated user
+    public void testDashboard() throws Exception {
+        mockMvc.perform(get("/dashboard"))
+               .andExpect(status().isOk())
+               .andExpect(model().attribute("message", "Welcome to the dashboard!"))
+               .andExpect(view().name("dashboard"));
+    }
 }

@@ -26,16 +26,22 @@
  *
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
-package tech.robd.toolbox.trivialauth.client.controller;
+package tech.robd.toolbox.trivialauth.client.config;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.web.SecurityFilterChain;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RestController
-public class ApiController {
+@SpringBootTest
+public class WebSecurityConfigTest {
 
-   @GetMapping("/api/greeting")
-   public String getGreeting() {
-      return "Hello from our secured REST endpoint!";
-   }
+    @Autowired
+    private SecurityFilterChain securityFilterChain;
+
+    @Test
+    public void testSecurityFilterChainBeanExists() {
+        assertNotNull(securityFilterChain, "SecurityFilterChain bean should be available in the application context");
+    }
 }

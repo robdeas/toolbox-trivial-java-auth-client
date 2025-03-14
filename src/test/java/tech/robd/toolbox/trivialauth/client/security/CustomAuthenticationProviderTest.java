@@ -26,16 +26,21 @@
  *
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
-package tech.robd.toolbox.trivialauth.client.controller;
+package tech.robd.toolbox.trivialauth.client.security;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RestController
-public class ApiController {
+public class CustomAuthenticationProviderTest {
 
-   @GetMapping("/api/greeting")
-   public String getGreeting() {
-      return "Hello from our secured REST endpoint!";
-   }
+    private final CustomAuthenticationProvider provider = new CustomAuthenticationProvider();
+
+    @Test
+    public void testAuthenticateWithInvalidCredentials() {
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken("user", "wrongPassword");
+        // This test expects a BadCredentialsException. In a real test, you might need to mock the HTTP call.
+        assertThrows(BadCredentialsException.class, () -> provider.authenticate(authToken));
+    }
 }
